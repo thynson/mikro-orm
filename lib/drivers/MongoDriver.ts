@@ -22,7 +22,7 @@ export class MongoDriver extends DatabaseDriver<MongoConnection> {
 
   async findOne<T extends IEntityType<T>>(entityName: string, where: FilterQuery<T> | IPrimaryKey, populate: string[] = [], orderBy: QueryOrderMap = {}, fields?: string[], lockMode?: LockMode): Promise<T | null> {
     if (Utils.isPrimaryKey(where)) {
-      where = { _id: new ObjectID(where as string) };
+      where = { _id: new ObjectID(where as string) } as FilterQuery<T>;
     }
 
     where = this.renameFields(entityName, where) as FilterQuery<T>;
@@ -43,7 +43,7 @@ export class MongoDriver extends DatabaseDriver<MongoConnection> {
 
   async nativeUpdate<T extends IEntityType<T>>(entityName: string, where: FilterQuery<T> | IPrimaryKey, data: EntityData<T>): Promise<QueryResult> {
     if (Utils.isPrimaryKey(where)) {
-      where = { _id: new ObjectID(where as string) };
+      where = { _id: new ObjectID(where as string) } as FilterQuery<T>;
     }
 
     where = this.renameFields(entityName, where) as FilterQuery<T>;
@@ -54,7 +54,7 @@ export class MongoDriver extends DatabaseDriver<MongoConnection> {
 
   async nativeDelete<T extends IEntityType<T>>(entityName: string, where: FilterQuery<T> | IPrimaryKey): Promise<QueryResult> {
     if (Utils.isPrimaryKey(where)) {
-      where = { _id: new ObjectID(where as string) };
+      where = { _id: new ObjectID(where as string) } as FilterQuery<T>;
     }
 
     where = this.renameFields(entityName, where) as FilterQuery<T>;

@@ -83,12 +83,12 @@
     "fast-deep-equal": "^2.0.0",
     "fs-extra": "^8.0.0",
     "globby": "^10.0.0",
-    "ts-morph": "^3.0.0",
+    "ts-morph": "^4.0.0",
     "typescript": "^3.5.0",
     "uuid": "^3.3.2"
   },
   "peerDependencies": {
-    "mongodb": "^3.2.0",
+    "mongodb": "^3.3.0",
     "mysql2": "^1.6.0",
     "pg": "^7.10.0",
     "sqlite": "^3.0.0"
@@ -99,7 +99,7 @@
     "@types/clone": "^0.1.30",
     "@types/fs-extra": "^8.0.0",
     "@types/jest": "^24.0.11",
-    "@types/mongodb": "^3.1.23",
+    "@types/mongodb": "^3.3.0",
     "@types/mysql2": "types/mysql2",
     "@types/node": "^11.13.5",
     "@types/pg": "^7.4.14",
@@ -108,7 +108,7 @@
     "husky": "^3.0.0",
     "jest": "^24.7.1",
     "lint-staged": "^9.0.0",
-    "mongodb": "^3.2.3",
+    "mongodb": "^3.3.0",
     "mysql2": "^1.6.5",
     "pg": "^7.10.0",
     "rimraf": "^3.0.0",

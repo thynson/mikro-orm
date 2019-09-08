@@ -3,9 +3,6 @@ import { Author } from './entities';
 import { BASE_DIR } from './bootstrap';
 import { FooBaz2 } from './entities-sql';
 
-/**
- * @class MikroORMTest
- */
 describe('MikroORM', () => {
 
   test('should throw when not enough config provided', async () => {
@@ -38,7 +35,7 @@ describe('MikroORM', () => {
     expect(orm.em).toBeInstanceOf(EntityManager);
     expect(await orm.isConnected()).toBe(true);
 
-    await orm.close();
+    await orm.close(true);
     expect(await orm.isConnected()).toBe(false);
   });
 
