@@ -1,4 +1,4 @@
-import umzug, { Migration as UmzugMigration, Umzug } from 'umzug';
+import umzug, { DownToOptions, Migration as UmzugMigration, Umzug, UpDownMigrationsOptions, UpToOptions } from 'umzug';
 
 import { AbstractSqlDriver, Constructor } from '../drivers';
 import { Configuration } from '../utils';
@@ -30,23 +30,35 @@ export class Migrator {
     });
   }
 
-  async createMigration(): Promise<string> {
-    const diff = await this.getSchemaDiff();
-    return this.generator.generate(diff);
+  async createMigration(path?: string, blank = false): Promise<[string, string[]]> {
+    const diff = blank ? ['...'] : await this.getSchemaDiff();
+    return [await this.generator.generate(diff, path), diff];
   }
 
   async getExecutedMigrations(): Promise<MigrationRow[]> {
+    await this.storage.ensureTable();
     return this.storage.getExecutedMigrations();
   }
 
-  async up(migration?: string): Promise<UmzugMigration[]> {
+  async getPendingMigrations(): Promise<UmzugMigration[]> {
     await this.storage.ensureTable();
-    return this.umzug.up(migration);
+    return this.umzug.pending();
   }
 
-  async down(migration?: string): Promise<UmzugMigration[]> {
+  async up(migration?: string): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async up(migrations?: string[]): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async up(options?: UpToOptions | UpDownMigrationsOptions): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async up(options?: string | string[] | UpToOptions | UpDownMigrationsOptions): Promise<UmzugMigration[]> {
     await this.storage.ensureTable();
-    return this.umzug.down(migration);
+    return this.umzug.up(options as string);
+  }
+
+  async down(migration?: string): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async down(migrations?: string[]): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async down(options?: DownToOptions | UpDownMigrationsOptions): Promise<UmzugMigration[]>; // tslint:disable-next-line:lines-between-class-members
+  async down(options?: string | string[] | DownToOptions | UpDownMigrationsOptions): Promise<UmzugMigration[]> {
+    await this.storage.ensureTable();
+    return this.umzug.down(options as string);
   }
 
   private async getSchemaDiff(): Promise<string[]> {

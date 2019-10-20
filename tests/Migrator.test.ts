@@ -72,6 +72,8 @@ describe('Migrator', () => {
     await storage.ensureTable(); // table exists, no-op
     await storage.unlogMigration('test');
     await expect(storage.executed()).resolves.toEqual([]);
+
+    await expect(migrator.getPendingMigrations()).resolves.toEqual([]);
   });
 
   test('runner', async () => {
