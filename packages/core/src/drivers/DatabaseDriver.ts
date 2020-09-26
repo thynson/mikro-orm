@@ -1,5 +1,5 @@
-import { CountOptions, EntityManagerType, FindOneOptions, FindOptions, IDatabaseDriver } from './IDatabaseDriver';
-import { EntityData, EntityMetadata, EntityProperty, FilterQuery, AnyEntity, Dictionary, Primary, PopulateOptions } from '../typings';
+import { EntityManagerType, FindOneOptions, FindOptions, IDatabaseDriver } from './IDatabaseDriver';
+import { EntityData, EntityMetadata, EntityProperty, FilterQuery, AnyEntity, Dictionary, Primary, PopulateOptions, HelperType } from '../typings';
 import { MetadataStorage } from '../metadata';
 import { Connection, QueryResult, Transaction } from '../connections';
 import { Configuration, ConnectionOptions, Utils } from '../utils';
@@ -35,7 +35,7 @@ export abstract class DatabaseDriver<C extends Connection> implements IDatabaseD
 
   abstract async nativeDelete<T extends AnyEntity<T>>(entityName: string, where: FilterQuery<T>, ctx?: Transaction): Promise<QueryResult>;
 
-  abstract async count<T extends AnyEntity<T>>(entityName: string, where: FilterQuery<T>, options?: CountOptions<T>, ctx?: Transaction): Promise<number>;
+  abstract async count<T extends AnyEntity<T>>(entityName: string, where: FilterQuery<T>, ctx?: Transaction): Promise<number>;
 
   createEntityManager<D extends IDatabaseDriver = IDatabaseDriver>(useContext?: boolean): D[typeof EntityManagerType] {
     return new EntityManager(this.config, this, this.metadata, useContext) as unknown as EntityManager<D>;
@@ -52,7 +52,7 @@ export abstract class DatabaseDriver<C extends Connection> implements IDatabaseD
   async syncCollection<T extends AnyEntity<T>, O extends AnyEntity<O>>(coll: Collection<T, O>, ctx?: Transaction): Promise<void> {
     const pk = this.metadata.find(coll.property.type)!.primaryKeys[0];
     const data = { [coll.property.name]: coll.getIdentifiers(pk) } as EntityData<T>;
-    await this.nativeUpdate<T>(coll.owner.constructor.name, coll.owner.__helper!.__primaryKey, data, ctx);
+    await this.nativeUpdate<T>(coll.owner.constructor.name, coll.owner[HelperType]!.__primaryKey, data, ctx);
   }
 
   mapResult<T extends AnyEntity<T>>(result: EntityData<T>, meta: EntityMetadata, populate: PopulateOptions<T>[] = []): T | null {

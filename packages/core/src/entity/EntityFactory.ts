@@ -1,5 +1,5 @@
 import { Utils } from '../utils/Utils';
-import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityName, EntityProperty, New, Populate, Primary } from '../typings';
+import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityName, EntityProperty, HelperType, New, Populate, Primary } from '../typings';
 import { UnitOfWork } from '../unit-of-work';
 import { EntityManager } from '../EntityManager';
 import { EventType, ReferenceType } from '../enums';
@@ -39,12 +39,12 @@ export class EntityFactory {
     const meta2 = this.processDiscriminatorColumn<T>(meta, data);
     const exists = this.findEntity<T>(data, meta2, options.convertCustomTypes);
 
-    if (exists && exists.__helper!.__initialized && !options.refresh) {
+    if (exists && exists[HelperType]!.__initialized && !options.refresh) {
       return exists as New<T, P>;
     }
 
     const entity = exists ?? this.createEntity<T>(data, meta2, options);
-    entity.__helper!.__initialized = options.initialized;
+    entity[HelperType]!.__initialized = options.initialized;
     this.hydrate(entity, meta, data, options);
 
     if (options.merge) {
@@ -100,7 +100,7 @@ export class EntityFactory {
     // perf: create the helper instance early to bypass the double getter defined on the prototype in EntityHelper
     const helper = new WrappedEntity(entity as T);
     Object.defineProperty(entity, '__helper', { value: helper });
-    entity.__helper!.__managed = true;
+    entity[HelperType]!.__managed = true;
     this.hydrator.hydrateReference(entity, meta, data, options.convertCustomTypes);
 
     if (!options.newEntity) {

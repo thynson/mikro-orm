@@ -1,4 +1,4 @@
-import { AnyEntity, Dictionary, EntityProperty, FilterQuery, PopulateOptions } from '../typings';
+import { AnyEntity, Dictionary, EntityProperty, FilterQuery, PopulateOptions, HelperType } from '../typings';
 import { EntityManager } from '../EntityManager';
 import { QueryHelper } from '../utils/QueryHelper';
 import { Utils } from '../utils/Utils';
@@ -137,7 +137,7 @@ export class EntityLoader {
       const value = entity[field];
 
       if (Utils.isEntity(value, true)) {
-        (value as AnyEntity).__helper!.populated();
+        (value as AnyEntity)[HelperType]!.populated();
       } else if (Utils.isCollection(value)) {
         value.populated();
       }
@@ -250,7 +250,7 @@ export class EntityLoader {
   }
 
   private async findChildrenFromPivotTable<T extends AnyEntity<T>>(filtered: T[], prop: EntityProperty, field: keyof T, refresh: boolean, where?: FilterQuery<T>, orderBy?: QueryOrderMap): Promise<AnyEntity[]> {
-    const ids = filtered.map(e => e.__helper!.__primaryKeys);
+    const ids = filtered.map(e => e[HelperType]!.__primaryKeys);
 
     if (prop.customType) {
       ids.forEach((id, idx) => ids[idx] = QueryHelper.processCustomType(prop, id, this.driver.getPlatform()));
@@ -260,7 +260,7 @@ export class EntityLoader {
     const children: AnyEntity[] = [];
 
     for (const entity of filtered) {
-      const items = map[entity.__helper!.__serializedPrimaryKey as string].map(item => {
+      const items = map[entity[HelperType]!.__serializedPrimaryKey as string].map(item => {
         const entity = this.em.getEntityFactory().create<T>(prop.type, item, { refresh, merge: true, convertCustomTypes: true });
         return this.em.getUnitOfWork().registerManaged(entity, item, refresh);
       });
@@ -303,7 +303,7 @@ export class EntityLoader {
       return children.map(e => Reference.unwrapReference(e[field]));
     }
 
-    return children.filter(e => !(e[field] as AnyEntity).__helper!.__initialized).map(e => Reference.unwrapReference(e[field]));
+    return children.filter(e => !(e[field] as AnyEntity)[HelperType]!.__initialized).map(e => Reference.unwrapReference(e[field]));
   }
 
   private lookupAllRelationships<T>(entityName: string, prefix = '', visited: string[] = []): PopulateOptions<T>[] {

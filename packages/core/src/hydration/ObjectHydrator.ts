@@ -1,4 +1,4 @@
-import { AnyEntity, Dictionary, EntityData, EntityProperty, Primary } from '../typings';
+import { AnyEntity, Dictionary, EntityData, EntityProperty, MetadataType, Primary } from '../typings';
 import { Hydrator } from './Hydrator';
 import { Collection } from '../entity/Collection';
 import { EntityAssigner } from '../entity/EntityAssigner';
@@ -39,7 +39,7 @@ export class ObjectHydrator extends Hydrator {
   private hydrateEmbeddable<T extends AnyEntity<T>>(entity: T, prop: EntityProperty, data: EntityData<T>): void {
     const value: Dictionary = {};
 
-    entity.__meta!.props.filter(p => p.embedded?.[0] === prop.name).forEach(childProp => {
+    entity[MetadataType]!.props.filter(p => p.embedded?.[0] === prop.name).forEach(childProp => {
       value[childProp.embedded![1]] = data[childProp.name];
     });
 

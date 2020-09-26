@@ -1,4 +1,4 @@
-import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityProperty, IMetadataStorage } from '../typings';
+import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityProperty, HelperType, IMetadataStorage } from '../typings';
 import { ReferenceType } from '../enums';
 import { Platform } from '../platforms';
 import { Utils } from './Utils';
@@ -82,7 +82,7 @@ export class EntityComparator {
     }
 
     const value = entity[prop.name];
-    const noPkRef = Utils.isEntity<T>(value, true) && !value.__helper!.hasPrimaryKey();
+    const noPkRef = Utils.isEntity<T>(value, true) && !value[HelperType]!.hasPrimaryKey();
     const noPkProp = prop.primary && !Utils.isDefined(value, true);
 
     // bidirectional 1:1 and m:1 fields are defined as setters, we need to check for `undefined` explicitly

@@ -1,6 +1,6 @@
 import { ArrayCollection } from './ArrayCollection';
 import { Collection } from './Collection';
-import { AnyEntity, EntityData, EntityMetadata, IPrimaryKey } from '../typings';
+import { AnyEntity, EntityData, EntityMetadata, IPrimaryKey, HelperType, MetadataType, PlatformType } from '../typings';
 import { Reference } from './Reference';
 import { wrap } from './wrap';
 import { Platform } from '../platforms';
@@ -9,8 +9,8 @@ import { Utils } from '../utils/Utils';
 export class EntityTransformer {
 
   static toObject<T extends AnyEntity<T>>(entity: T, ignoreFields: string[] = [], visited = new WeakSet<AnyEntity>()): EntityData<T> {
-    const wrapped = entity.__helper!;
-    const meta = entity.__meta!;
+    const wrapped = entity[HelperType]!;
+    const meta = entity[MetadataType]!;
     const ret = {} as EntityData<T>;
 
     meta.primaryKeys
@@ -21,14 +21,14 @@ export class EntityTransformer {
         if (meta.properties[pk].serializer) {
           value = meta.properties[pk].serializer!(entity[pk]);
         } else if (Utils.isEntity(entity[pk], true)) {
-          value = EntityTransformer.processEntity(pk, entity, ignoreFields, entity.__platform!, visited);
+          value = EntityTransformer.processEntity(pk, entity, ignoreFields, entity[PlatformType]!, visited);
         } else {
-          value = entity.__platform!.normalizePrimaryKey(Utils.getPrimaryKeyValue<T>(entity, [pk]));
+          value = entity[PlatformType]!.normalizePrimaryKey(Utils.getPrimaryKeyValue<T>(entity, [pk]));
         }
 
         return [pk, value] as [string & keyof T, string];
       })
-      .forEach(([pk, value]) => ret[this.propertyName(meta, pk, entity.__platform!)] = value as unknown as T[keyof T]);
+      .forEach(([pk, value]) => ret[this.propertyName(meta, pk, entity[PlatformType]!)] = value as unknown as T[keyof T]);
 
     if ((!wrapped.isInitialized() && wrapped.hasPrimaryKey()) || visited.has(entity)) {
       return ret;
@@ -74,8 +74,8 @@ export class EntityTransformer {
   }
 
   private static processProperty<T extends AnyEntity<T>>(prop: keyof T & string, entity: T, ignoreFields: string[], visited: WeakSet<AnyEntity>): T[keyof T] | undefined {
-    const wrapped = entity.__helper!;
-    const property = wrapped.__meta.properties[prop];
+    const wrapped = entity[HelperType]!;
+    const property = wrapped[MetadataType].properties[prop];
 
     /* istanbul ignore next */
     const serializer = property?.serializer;
@@ -88,7 +88,7 @@ export class EntityTransformer {
     const customType = property?.customType;
 
     if (customType) {
-      return customType.toJSON(entity[prop], entity.__platform!);
+      return customType.toJSON(entity[prop], entity[PlatformType]!);
     }
 
     if (entity[prop] as unknown instanceof ArrayCollection) {
@@ -96,7 +96,7 @@ export class EntityTransformer {
     }
 
     if (Utils.isEntity(entity[prop], true)) {
-      return EntityTransformer.processEntity(prop, entity, ignoreFields, entity.__platform!, visited);
+      return EntityTransformer.processEntity(prop, entity, ignoreFields, entity[PlatformType]!, visited);
     }
 
     return entity[prop];
@@ -104,10 +104,10 @@ export class EntityTransformer {
 
   private static processEntity<T extends AnyEntity<T>>(prop: keyof T, entity: T, ignoreFields: string[], platform: Platform, visited: WeakSet<AnyEntity>): T[keyof T] | undefined {
     const child = entity[prop] as unknown as T | Reference<T>;
-    const wrapped = (child as T).__helper!;
+    const wrapped = (child as T)[HelperType]!;
 
     if (wrapped.isInitialized() && wrapped.__populated && child !== entity && !wrapped.__lazyInitialized) {
-      const args = [...wrapped.__meta.toJsonParams.map(() => undefined), ignoreFields, visited];
+      const args = [...wrapped[MetadataType].toJsonParams.map(() => undefined), ignoreFields, visited];
       return wrap(child).toJSON(...args) as T[keyof T];
     }
 

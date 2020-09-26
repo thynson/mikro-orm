@@ -1,7 +1,7 @@
 import { inspect } from 'util';
 
 import { EntityManager } from '../EntityManager';
-import { AnyEntity, Dictionary, EntityMetadata, EntityProperty } from '../typings';
+import { AnyEntity, Dictionary, EntityMetadata, EntityProperty, HelperType } from '../typings';
 import { EntityTransformer } from './EntityTransformer';
 import { Reference } from './Reference';
 import { Platform } from '../platforms';
@@ -93,7 +93,7 @@ export class EntityHelper {
       let name = meta.name;
 
       // distinguish not initialized entities
-      if (!this.__helper!.__initialized) {
+      if (!this[HelperType]!.__initialized) {
         name = `Ref<${name}>`;
       }
 
@@ -124,7 +124,7 @@ export class EntityHelper {
       inverse.add(owner);
     }
 
-    if (prop.reference === ReferenceType.ONE_TO_ONE && entity && entity.__helper!.__initialized && Reference.unwrapReference(inverse) !== owner) {
+    if (prop.reference === ReferenceType.ONE_TO_ONE && entity && entity[HelperType]!.__initialized && Reference.unwrapReference(inverse) !== owner) {
       EntityHelper.propagateOneToOne(entity, owner, prop);
     }
   }

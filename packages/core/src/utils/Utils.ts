@@ -7,7 +7,7 @@ import { pathExists } from 'fs-extra';
 import { createHash } from 'crypto';
 import { recovery } from 'escaya';
 
-import { AnyEntity, Dictionary, EntityMetadata, EntityName, EntityProperty, Primary, IMetadataStorage } from '../typings';
+import { AnyEntity, Dictionary, EntityMetadata, EntityName, EntityProperty, Primary, IMetadataStorage, HelperType } from '../typings';
 import { GroupOperator, ReferenceType, QueryOperator } from '../enums';
 import { Collection } from '../entity';
 import { Platform } from '../platforms';
@@ -223,7 +223,7 @@ export class Utils {
     }
 
     if (Utils.isEntity(data, true)) {
-      return data.__helper!.__primaryKey as Primary<T>;
+      return data[HelperType]!.__primaryKey as Primary<T>;
     }
 
     if (strict && meta && Object.keys(data).length !== meta.primaryKeys.length) {
@@ -246,7 +246,7 @@ export class Utils {
       const value = entity[pk];
 
       if (Utils.isEntity<T>(value, true)) {
-        return value.__helper!.__serializedPrimaryKey;
+        return value[HelperType]!.__serializedPrimaryKey;
       }
 
       return value;
@@ -269,7 +269,7 @@ export class Utils {
     }
 
     if (Utils.isEntity(entity[primaryKeys[0]])) {
-      return entity[primaryKeys[0]].__helper!.__primaryKey;
+      return entity[primaryKeys[0]][HelperType]!.__primaryKey;
     }
 
     return entity[primaryKeys[0]];
@@ -278,7 +278,7 @@ export class Utils {
   static getPrimaryKeyValues<T extends AnyEntity<T>>(entity: T, primaryKeys: string[], allowScalar = false) {
     if (allowScalar && primaryKeys.length === 1) {
       if (Utils.isEntity(entity[primaryKeys[0]])) {
-        return entity[primaryKeys[0]].__helper!.__primaryKey;
+        return entity[primaryKeys[0]][HelperType]!.__primaryKey;
       }
 
       return entity[primaryKeys[0]];
@@ -286,7 +286,7 @@ export class Utils {
 
     return primaryKeys.map(pk => {
       if (Utils.isEntity(entity[pk])) {
-        return entity[pk].__helper!.__primaryKey;
+        return entity[pk][HelperType]!.__primaryKey;
       }
 
       return entity[pk];

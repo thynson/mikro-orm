@@ -1,5 +1,5 @@
 import { MetadataStorage } from '../metadata';
-import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityProperty, FilterQuery, IPrimaryKey } from '../typings';
+import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityProperty, FilterQuery, HelperType, IPrimaryKey, MetadataType } from '../typings';
 import { EntityIdentifier } from '../entity';
 import { ChangeSet, ChangeSetType } from './ChangeSet';
 import { QueryResult, Transaction } from '../connections';
@@ -39,14 +39,14 @@ export class ChangeSetPersister {
   }
 
   async executeDeletes<T extends AnyEntity<T>>(changeSets: ChangeSet<T>[], ctx?: Transaction): Promise<void> {
-    const meta = changeSets[0].entity.__meta!;
+    const meta = changeSets[0].entity[MetadataType]!;
     const pk = Utils.getPrimaryKeyHash(meta.primaryKeys);
 
     if (meta.compositePK) {
-      const pks = changeSets.map(cs => cs.entity.__helper!.__primaryKeys);
+      const pks = changeSets.map(cs => cs.entity[HelperType]!.__primaryKeys);
       await this.driver.nativeDelete(changeSets[0].name, { [pk]: { $in: pks } }, ctx);
     } else {
-      const pks = changeSets.map(cs => cs.entity.__helper!.__primaryKey as Dictionary);
+      const pks = changeSets.map(cs => cs.entity[HelperType]!.__primaryKey as Dictionary);
       await this.driver.nativeDelete(changeSets[0].name, { [pk]: { $in: pks } }, ctx);
     }
   }
@@ -60,7 +60,7 @@ export class ChangeSetPersister {
   }
 
   private async persistNewEntity<T extends AnyEntity<T>>(meta: EntityMetadata<T>, changeSet: ChangeSet<T>, ctx?: Transaction): Promise<void> {
-    const wrapped = changeSet.entity.__helper!;
+    const wrapped = changeSet.entity[HelperType]!;
     const res = await this.driver.nativeInsert(changeSet.name, changeSet.payload, ctx);
 
     if (!wrapped.hasPrimaryKey()) {
@@ -88,7 +88,7 @@ export class ChangeSetPersister {
 
     for (let i = 0; i < changeSets.length; i++) {
       const changeSet = changeSets[i];
-      const wrapped = changeSet.entity.__helper!;
+      const wrapped = changeSet.entity[HelperType]!;
 
       if (!wrapped.hasPrimaryKey()) {
         this.mapPrimaryKey(meta, res.rows![i][meta.primaryKeys[0]], changeSet);
@@ -114,7 +114,7 @@ export class ChangeSetPersister {
   private mapPrimaryKey<T extends AnyEntity<T>>(meta: EntityMetadata<T>, value: IPrimaryKey, changeSet: ChangeSet<T>): void {
     const prop = meta.properties[meta.primaryKeys[0]];
     const insertId = prop.customType ? prop.customType.convertToJSValue(value, this.driver.getPlatform()) : value;
-    const wrapped = changeSet.entity.__helper!;
+    const wrapped = changeSet.entity[HelperType]!;
 
     if (!wrapped.hasPrimaryKey()) {
       wrapped.__primaryKey = insertId;
@@ -132,12 +132,12 @@ export class ChangeSetPersister {
       return;
     }
 
-    changeSet.entity.__helper!.populated();
+    changeSet.entity[HelperType]!.populated();
     meta.relations.forEach(prop => {
       const value = changeSet.entity[prop.name];
 
       if (Utils.isEntity(value, true)) {
-        (value as AnyEntity).__helper!.populated();
+        (value as AnyEntity)[HelperType]!.populated();
       } else if (Utils.isCollection(value)) {
         value.populated();
       }
@@ -146,7 +146,7 @@ export class ChangeSetPersister {
 
   private async updateEntity<T extends AnyEntity<T>>(meta: EntityMetadata<T>, changeSet: ChangeSet<T>, ctx?: Transaction): Promise<QueryResult> {
     if (!meta.versionProperty || !changeSet.entity[meta.versionProperty]) {
-      return this.driver.nativeUpdate(changeSet.name, changeSet.entity.__helper!.__primaryKey as Dictionary, changeSet.payload, ctx);
+      return this.driver.nativeUpdate(changeSet.name, changeSet.entity[HelperType]!.__primaryKey as Dictionary, changeSet.payload, ctx);
     }
 
     const cond = {
@@ -168,7 +168,7 @@ export class ChangeSetPersister {
       return;
     }
 
-    const e = await this.driver.findOne(meta.name!, changeSet.entity.__helper!.__primaryKey, {
+    const e = await this.driver.findOne(meta.name!, changeSet.entity[HelperType]!.__primaryKey, {
       fields: [meta.versionProperty],
     }, ctx);
 
@@ -193,7 +193,7 @@ export class ChangeSetPersister {
       changeSet.entity[prop.name] = changeSet.payload[prop.name] = prop.onCreate(changeSet.entity);
 
       if (prop.primary) {
-        this.mapPrimaryKey(changeSet.entity.__meta!, changeSet.entity[prop.name] as unknown as IPrimaryKey, changeSet);
+        this.mapPrimaryKey(changeSet.entity[MetadataType]!, changeSet.entity[prop.name] as unknown as IPrimaryKey, changeSet);
       }
     }
 

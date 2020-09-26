@@ -1,5 +1,5 @@
 import { EntityManager } from '../EntityManager';
-import { AnyEntity, Dictionary, EntityData, EntityMetadata, Populate, Primary } from '../typings';
+import { AnyEntity, Dictionary, EntityData, EntityMetadata, HelperType, MetadataType, PlatformType, Populate, Primary } from '../typings';
 import { IdentifiedReference, Reference } from './Reference';
 import { EntityTransformer } from './EntityTransformer';
 import { AssignOptions, EntityAssigner } from './EntityAssigner';
@@ -74,11 +74,11 @@ export class WrappedEntity<T extends AnyEntity<T>, PK extends keyof T> {
   }
 
   get __meta(): EntityMetadata<T> {
-    return this.entity.__meta!;
+    return this.entity[MetadataType]!;
   }
 
   get __platform(): Platform {
-    return this.entity.__platform!;
+    return this.entity[PlatformType]!;
   }
 
   get __primaryKey(): Primary<T> {
@@ -101,7 +101,7 @@ export class WrappedEntity<T extends AnyEntity<T>, PK extends keyof T> {
     const value = this.entity[this.__meta.serializedPrimaryKey];
 
     if (Utils.isEntity<T>(value)) {
-      return value.__helper!.__serializedPrimaryKey as string;
+      return value[HelperType]!.__serializedPrimaryKey as string;
     }
 
     return value as unknown as string;

@@ -1,4 +1,4 @@
-import { AnyEntity, Dictionary, EntityProperty, Primary } from '../typings';
+import { AnyEntity, Dictionary, EntityProperty, HelperType, MetadataType, PlatformType, Primary } from '../typings';
 import { wrap } from './wrap';
 
 export type IdentifiedReference<T extends AnyEntity<T>, PK extends keyof T = 'id' & keyof T> = { [K in PK]: T[K] } & Reference<T>;
@@ -7,7 +7,7 @@ export class Reference<T extends AnyEntity<T>> {
 
   constructor(private entity: T) {
     this.set(entity);
-    const meta = this.entity.__meta!;
+    const meta = this.entity[MetadataType]!;
     Object.defineProperty(this, '__reference', { value: true });
 
     meta.primaryKeys.forEach(primaryKey => {
@@ -21,7 +21,7 @@ export class Reference<T extends AnyEntity<T>> {
     if (meta.serializedPrimaryKey && meta.primaryKeys[0] !== meta.serializedPrimaryKey) {
       Object.defineProperty(this, meta.serializedPrimaryKey, {
         get() {
-          return this.entity.__helper!.__serializedPrimaryKey;
+          return this.entity[HelperType]!.__serializedPrimaryKey;
         },
       });
     }
@@ -64,7 +64,7 @@ export class Reference<T extends AnyEntity<T>> {
   async load<K extends keyof T>(prop: K): Promise<T[K]>;
   async load<K extends keyof T = never>(prop?: K): Promise<T | T[K]> {
     if (!this.isInitialized()) {
-      await this.entity.__helper!.init();
+      await this.entity[HelperType]!.init();
     }
 
     if (prop) {
@@ -80,9 +80,9 @@ export class Reference<T extends AnyEntity<T>> {
     }
 
     this.entity = entity;
-    Object.defineProperty(this, '__meta', { value: this.entity.__meta!, writable: true });
-    Object.defineProperty(this, '__platform', { value: this.entity.__platform!, writable: true });
-    Object.defineProperty(this, '__helper', { value: this.entity.__helper!, writable: true });
+    Object.defineProperty(this, '__meta', { value: this.entity[MetadataType]!, writable: true });
+    Object.defineProperty(this, '__platform', { value: this.entity[PlatformType]!, writable: true });
+    Object.defineProperty(this, '__helper', { value: this.entity[HelperType]!, writable: true });
     Object.defineProperty(this, '$', { value: this.entity, writable: true });
     Object.defineProperty(this, 'get', { value: () => this.entity, writable: true });
   }
@@ -93,7 +93,7 @@ export class Reference<T extends AnyEntity<T>> {
 
   getEntity(): T {
     if (!this.isInitialized()) {
-      throw new Error(`Reference<${this.entity.__meta!.name}> ${(this.entity.__helper!.__primaryKey as Primary<T>)} not initialized`);
+      throw new Error(`Reference<${this.entity[MetadataType]!.name}> ${(this.entity[HelperType]!.__primaryKey as Primary<T>)} not initialized`);
     }
 
     return this.entity;
@@ -104,11 +104,11 @@ export class Reference<T extends AnyEntity<T>> {
   }
 
   isInitialized(): boolean {
-    return this.entity.__helper!.__initialized;
+    return this.entity[HelperType]!.__initialized;
   }
 
   populated(populated?: boolean): void {
-    this.entity.__helper!.populated!(populated);
+    this.entity[HelperType]!.populated!(populated);
   }
 
   toJSON(...args: any[]): Dictionary {

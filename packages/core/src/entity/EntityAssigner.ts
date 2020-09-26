@@ -1,7 +1,7 @@
 import { inspect } from 'util';
 import { Collection } from './Collection';
 import { EntityManager } from '../EntityManager';
-import { AnyEntity, EntityData, EntityMetadata, EntityProperty } from '../typings';
+import { AnyEntity, EntityData, EntityMetadata, EntityProperty, HelperType, MetadataType, PlatformType } from '../typings';
 import { Utils } from '../utils/Utils';
 import { Reference } from './Reference';
 import { ReferenceType, SCALAR_TYPES } from '../enums';
@@ -15,8 +15,8 @@ export class EntityAssigner {
   static assign<T extends AnyEntity<T>>(entity: T, data: EntityData<T>, onlyProperties?: boolean): T;
   static assign<T extends AnyEntity<T>>(entity: T, data: EntityData<T>, onlyProperties: AssignOptions | boolean = false): T {
     const options = (typeof onlyProperties === 'boolean' ? { onlyProperties } : onlyProperties);
-    const wrapped = entity.__helper!;
-    const meta = entity.__meta!;
+    const wrapped = entity[HelperType]!;
+    const meta = entity[MetadataType]!;
     const em = options.em || wrapped.__em;
     const props = meta.properties;
 
@@ -30,7 +30,7 @@ export class EntityAssigner {
       let value = data[prop as keyof EntityData<T>];
 
       if (options.convertCustomTypes && customType && props[prop].reference === ReferenceType.SCALAR && !Utils.isEntity(data)) {
-        value = props[prop].customType.convertToJSValue(value, entity.__platform);
+        value = props[prop].customType.convertToJSValue(value, entity[PlatformType]);
       }
 
       if ([ReferenceType.MANY_TO_ONE, ReferenceType.ONE_TO_ONE].includes(props[prop]?.reference) && Utils.isDefined(value, true) && EntityAssigner.validateEM(em)) {

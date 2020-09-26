@@ -4,7 +4,7 @@ import { Configuration, QueryHelper, Utils } from './utils';
 import { AssignOptions, EntityAssigner, EntityFactory, EntityLoader, EntityRepository, EntityValidator, IdentifiedReference, Reference } from './entity';
 import { UnitOfWork } from './unit-of-work';
 import { CountOptions, DeleteOptions, EntityManagerType, FindOneOptions, FindOneOrFailOptions, FindOptions, IDatabaseDriver, UpdateOptions } from './drivers';
-import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityName, FilterDef, FilterQuery, Loaded, Primary, Populate, PopulateMap, PopulateOptions, New, GetRepository } from './typings';
+import { AnyEntity, Dictionary, EntityData, EntityMetadata, EntityName, FilterDef, FilterQuery, Loaded, Primary, Populate, PopulateMap, PopulateOptions, New, GetRepository, HelperType } from './typings';
 import { LoadStrategy, LockMode, QueryOrderMap, ReferenceType, SCALAR_TYPES } from './enums';
 import { MetadataStorage } from './metadata';
 import { Transaction } from './connections';
@@ -222,7 +222,7 @@ export class EntityManager<D extends IDatabaseDriver = IDatabaseDriver> {
     let entity = this.getUnitOfWork().tryGetById<T>(entityName, where);
     const isOptimisticLocking = !Utils.isDefined(options.lockMode) || options.lockMode === LockMode.OPTIMISTIC;
 
-    if (entity && entity.__helper!.__initialized && !options.refresh && isOptimisticLocking) {
+    if (entity && entity[HelperType]!.__initialized && !options.refresh && isOptimisticLocking) {
       return this.lockAndPopulate<T, P>(entityName, entity, where, options);
     }
 
@@ -419,7 +419,7 @@ export class EntityManager<D extends IDatabaseDriver = IDatabaseDriver> {
     this.validator.validatePrimaryKey(data as EntityData<T>, this.metadata.get(entityName));
     let entity = this.getUnitOfWork().tryGetById<T>(entityName, data as FilterQuery<T>, false);
 
-    if (entity && entity.__helper!.__initialized && !refresh) {
+    if (entity && entity[HelperType]!.__initialized && !refresh) {
       return entity;
     }
 

@@ -1,4 +1,4 @@
-import { AnyEntity, Dictionary, EntityProperty, IPrimaryKey, Primary } from '../typings';
+import { AnyEntity, Dictionary, EntityProperty, HelperType, IPrimaryKey, MetadataType, Primary } from '../typings';
 import { Reference } from './Reference';
 import { wrap } from './wrap';
 import { ReferenceType } from '../enums';
@@ -35,7 +35,7 @@ export class ArrayCollection<T, O> {
       return [];
     }
 
-    const meta = (this._firstItem as AnyEntity<T>).__meta!;
+    const meta = (this._firstItem as AnyEntity<T>)[MetadataType]!;
     const args = [...meta.toJsonParams.map(() => undefined), [this.property.name]];
 
     return this.getItems().map(item => wrap(item).toJSON(...args));
@@ -52,7 +52,7 @@ export class ArrayCollection<T, O> {
       return [];
     }
 
-    field = field ?? (this._firstItem as AnyEntity<T>).__meta!.serializedPrimaryKey;
+    field = field ?? (this._firstItem as AnyEntity<T>)[MetadataType]!.serializedPrimaryKey;
 
     return this.getItems().map(i => i[field as keyof T]) as unknown as U[];
   }
@@ -108,7 +108,7 @@ export class ArrayCollection<T, O> {
 
   isInitialized(fully = false): boolean {
     if (fully) {
-      return this.initialized && [...this.items].every((item: AnyEntity<T>) => item.__helper!.__initialized);
+      return this.initialized && [...this.items].every((item: AnyEntity<T>) => item[HelperType]!.__initialized);
     }
 
     return this.initialized;
@@ -129,7 +129,7 @@ export class ArrayCollection<T, O> {
    */
   get property(): EntityProperty<T> {
     if (!this._property) {
-      const meta = this.owner.__meta!;
+      const meta = this.owner[MetadataType]!;
       const field = Object.keys(meta.properties).find(k => this.owner[k] === this);
       this._property = meta.properties[field!];
     }

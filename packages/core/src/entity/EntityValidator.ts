@@ -1,4 +1,4 @@
-import { EntityData, EntityMetadata, EntityProperty, FilterQuery, AnyEntity } from '../typings';
+import { EntityData, EntityMetadata, EntityProperty, FilterQuery, AnyEntity, HelperType } from '../typings';
 import { ReferenceType } from '../enums';
 import { Utils } from '../utils/Utils';
 import { ValidationError } from '../errors';
@@ -85,7 +85,7 @@ export class EntityValidator {
   }
 
   private validateCollection<T extends AnyEntity<T>>(entity: T, prop: EntityProperty): void {
-    if (entity.__helper!.__initialized && !entity[prop.name as keyof T]) {
+    if (entity[HelperType]!.__initialized && !entity[prop.name as keyof T]) {
       throw ValidationError.fromCollectionNotInitialized(entity, prop);
     }
   }

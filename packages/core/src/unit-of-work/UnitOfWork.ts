@@ -1,4 +1,4 @@
-import { AnyEntity, EntityData, EntityMetadata, EntityProperty, FilterQuery, Primary } from '../typings';
+import { AnyEntity, EntityData, EntityMetadata, EntityProperty, FilterQuery, HelperType, MetadataType, Primary } from '../typings';
 import { Collection, EntityIdentifier, Reference } from '../entity';
 import { ChangeSet, ChangeSetType } from './ChangeSet';
 import { ChangeSetComputer } from './ChangeSetComputer';
@@ -32,8 +32,8 @@ export class UnitOfWork {
   constructor(private readonly em: EntityManager) { }
 
   merge<T extends AnyEntity<T>>(entity: T, visited = new WeakSet<AnyEntity>(), mergeData = true): void {
-    const meta = entity.__meta!;
-    const wrapped = entity.__helper!;
+    const meta = entity[MetadataType]!;
+    const wrapped = entity[HelperType]!;
     wrapped.__em = this.em;
 
     if (!wrapped.hasPrimaryKey()) {
@@ -41,14 +41,14 @@ export class UnitOfWork {
     }
 
     // skip new entities that could be linked from already persisted entity that is being re-fetched
-    if (!entity.__helper!.__managed) {
+    if (!entity[HelperType]!.__managed) {
       return;
     }
 
     this.identityMap.set(`${meta.root.name}-${wrapped.__serializedPrimaryKey}`, entity);
 
-    if (mergeData || !entity.__helper!.__originalEntityData) {
-      entity.__helper!.__originalEntityData = this.comparator.prepareEntity(entity);
+    if (mergeData || !entity[HelperType]!.__originalEntityData) {
+      entity[HelperType]!.__originalEntityData = this.comparator.prepareEntity(entity);
     }
 
     this.cascade(entity, Cascade.MERGE, visited, { mergeData: false });
@@ -58,17 +58,17 @@ export class UnitOfWork {
    * @internal
    */
   registerManaged<T extends AnyEntity<T>>(entity: T, data?: EntityData<T>, refresh?: boolean, newEntity?: boolean): T {
-    const root = entity.__meta!.root;
-    this.identityMap.set(`${root.name}-${entity.__helper!.__serializedPrimaryKey}`, entity);
+    const root = entity[MetadataType]!.root;
+    this.identityMap.set(`${root.name}-${entity[HelperType]!.__serializedPrimaryKey}`, entity);
 
     if (newEntity) {
       return entity;
     }
 
-    entity.__helper!.__em = this.em;
+    entity[HelperType]!.__em = this.em;
 
-    if (data && entity.__helper!.__initialized && (refresh || !entity.__helper!.__originalEntityData)) {
-      entity.__helper!.__originalEntityData = data;
+    if (data && entity[HelperType]!.__initialized && (refresh || !entity[HelperType]!.__originalEntityData)) {
+      entity[HelperType]!.__originalEntityData = data;
     }
 
     return entity;
@@ -118,11 +118,11 @@ export class UnitOfWork {
   getOriginalEntityData<T extends AnyEntity<T>>(entity?: T): EntityData<T>[] | EntityData<T> | undefined {
     if (!entity) {
       return [...this.identityMap.values()].map(e => {
-        return e.__helper!.__originalEntityData;
+        return e[HelperType]!.__originalEntityData;
       });
     }
 
-    return entity.__helper!.__originalEntityData;
+    return entity[HelperType]!.__originalEntityData;
   }
 
   getPersistStack(): Set<AnyEntity> {
@@ -156,7 +156,7 @@ export class UnitOfWork {
     this.checkOrphanRemoval(cs);
     this.changeSets.set(entity, cs);
     this.persistStack.delete(entity);
-    entity.__helper!.__originalEntityData = this.comparator.prepareEntity(entity);
+    entity[HelperType]!.__originalEntityData = this.comparator.prepareEntity(entity);
   }
 
   recomputeSingleChangeSet<T extends AnyEntity<T>>(entity: T): void {
@@ -171,7 +171,7 @@ export class UnitOfWork {
     if (cs) {
       this.checkOrphanRemoval(cs);
       Object.assign(changeSet.payload, cs.payload);
-      entity.__helper!.__originalEntityData = this.comparator.prepareEntity(entity);
+      entity[HelperType]!.__originalEntityData = this.comparator.prepareEntity(entity);
     }
   }
 
@@ -194,7 +194,7 @@ export class UnitOfWork {
       return;
     }
 
-    if (entity.__helper!.hasPrimaryKey()) {
+    if (entity[HelperType]!.hasPrimaryKey()) {
       this.removeStack.add(entity);
     }
 
@@ -236,7 +236,7 @@ export class UnitOfWork {
   }
 
   async lock<T extends AnyEntity<T>>(entity: T, mode: LockMode, version?: number | Date): Promise<void> {
-    if (!this.getById(entity.constructor.name, entity.__helper!.__primaryKeys)) {
+    if (!this.getById(entity.constructor.name, entity[HelperType]!.__primaryKeys)) {
       throw ValidationError.entityNotManaged(entity);
     }
 
@@ -255,8 +255,8 @@ export class UnitOfWork {
   }
 
   unsetIdentity(entity: AnyEntity): void {
-    const wrapped = entity.__helper!;
-    this.identityMap.delete(`${entity.__meta!.root.name}-${wrapped.__serializedPrimaryKey}`);
+    const wrapped = entity[HelperType]!;
+    this.identityMap.delete(`${entity[MetadataType]!.root.name}-${wrapped.__serializedPrimaryKey}`);
     delete wrapped.__identifier;
     delete wrapped.__originalEntityData;
   }
@@ -299,7 +299,7 @@ export class UnitOfWork {
     }
 
     visited.add(entity);
-    const wrapped = entity.__helper!;
+    const wrapped = entity[HelperType]!;
 
     if (!wrapped.__initialized || this.removeStack.has(entity) || this.orphanRemoveStack.has(entity)) {
       return;
@@ -307,7 +307,7 @@ export class UnitOfWork {
 
     this.initIdentifier(entity);
 
-    for (const prop of entity.__meta!.relations) {
+    for (const prop of entity[MetadataType]!.relations) {
       const reference = Reference.unwrapReference(entity[prop.name]);
       this.processReference(entity, prop, reference, visited);
     }
@@ -328,7 +328,7 @@ export class UnitOfWork {
 
     for (const prop of props) {
       // check diff, if we had a value on 1:1 before and now it changed (nulled or replaced), we need to trigger orphan removal
-      const data = changeSet.entity.__helper!.__originalEntityData;
+      const data = changeSet.entity[HelperType]!.__originalEntityData;
 
       if (prop.orphanRemoval && data && data[prop.name] && prop.name in changeSet.payload) {
         const orphan = this.getById(prop.type, data[prop.name]);
@@ -338,7 +338,7 @@ export class UnitOfWork {
   }
 
   private initIdentifier<T extends AnyEntity<T>>(entity: T): void {
-    const wrapped = entity.__helper!;
+    const wrapped = entity[HelperType]!;
 
     if (wrapped.__identifier || wrapped.hasPrimaryKey()) {
       return;
@@ -360,7 +360,7 @@ export class UnitOfWork {
   }
 
   private processToOneReference<T extends AnyEntity<T>>(reference: any, visited: WeakSet<AnyEntity>): void {
-    if (!reference.__helper!.__originalEntityData) {
+    if (!reference[HelperType]!.__originalEntityData) {
       this.findNewEntities(reference, visited);
     }
   }
@@ -374,7 +374,7 @@ export class UnitOfWork {
     }
 
     reference.getItems(false)
-      .filter(item => !item.__helper!.__originalEntityData)
+      .filter(item => !item[HelperType]!.__originalEntityData)
       .forEach(item => this.findNewEntities(item, visited));
   }
 
@@ -417,7 +417,7 @@ export class UnitOfWork {
       case Cascade.REMOVE: this.remove(entity, visited); break;
     }
 
-    for (const prop of entity.__meta!.relations) {
+    for (const prop of entity[MetadataType]!.relations) {
       this.cascadeReference<T>(entity, prop, type, visited, options);
     }
   }
@@ -441,13 +441,13 @@ export class UnitOfWork {
     if ([ReferenceType.ONE_TO_MANY, ReferenceType.MANY_TO_MANY].includes(prop.reference) && collection) {
       collection
         .getItems(false)
-        .filter(item => !requireFullyInitialized || item.__helper!.__initialized)
+        .filter(item => !requireFullyInitialized || item[HelperType]!.__initialized)
         .forEach(item => this.cascade(item, type, visited, options));
     }
   }
 
   private isCollectionSelfReferenced(collection: Collection<AnyEntity>, visited: WeakSet<AnyEntity>): boolean {
-    const filtered = collection.getItems(false).filter(item => !item.__helper!.__originalEntityData);
+    const filtered = collection.getItems(false).filter(item => !item[HelperType]!.__originalEntityData);
     return filtered.some(items => visited.has(items));
   }
 
@@ -476,7 +476,7 @@ export class UnitOfWork {
       return;
     }
 
-    const wrapped = entity.__helper!;
+    const wrapped = entity[HelperType]!;
 
     if (!wrapped.__initialized) {
       await wrapped.init();
@@ -550,7 +550,7 @@ export class UnitOfWork {
       return;
     }
 
-    const props = changeSets[0].entity.__meta!.relations.filter(prop => {
+    const props = changeSets[0].entity[MetadataType]!.relations.filter(prop => {
       return (prop.reference === ReferenceType.ONE_TO_ONE && prop.owner) || prop.reference === ReferenceType.MANY_TO_ONE;
     });
 

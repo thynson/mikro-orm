@@ -1,6 +1,6 @@
 import { Configuration, Utils } from '../utils';
 import { MetadataStorage } from '../metadata';
-import { AnyEntity, EntityData, EntityProperty } from '../typings';
+import { AnyEntity, EntityData, EntityProperty, HelperType } from '../typings';
 import { ChangeSet, ChangeSetType } from './ChangeSet';
 import { Collection, EntityValidator } from '../entity';
 import { Platform } from '../platforms';
@@ -27,12 +27,12 @@ export class ChangeSetComputer {
     }
 
     changeSet.name = meta.name!;
-    changeSet.type = entity.__helper!.__originalEntityData ? ChangeSetType.UPDATE : ChangeSetType.CREATE;
+    changeSet.type = entity[HelperType]!.__originalEntityData ? ChangeSetType.UPDATE : ChangeSetType.CREATE;
     changeSet.collection = meta.collection;
     changeSet.payload = this.computePayload(entity);
 
     if (changeSet.type === ChangeSetType.UPDATE) {
-      changeSet.originalEntity = entity.__helper!.__originalEntityData;
+      changeSet.originalEntity = entity[HelperType]!.__originalEntityData;
     }
 
     if (this.config.get('validate')) {
@@ -53,8 +53,8 @@ export class ChangeSetComputer {
   private computePayload<T extends AnyEntity<T>>(entity: T): EntityData<T> {
     const data = this.comparator.prepareEntity(entity);
 
-    if (entity.__helper!.__originalEntityData) {
-      return Utils.diff(entity.__helper!.__originalEntityData, data);
+    if (entity[HelperType]!.__originalEntityData) {
+      return Utils.diff(entity[HelperType]!.__originalEntityData!, data);
     }
 
     return data;
@@ -76,7 +76,7 @@ export class ChangeSetComputer {
     const isToOneOwner = prop.reference === ReferenceType.MANY_TO_ONE || (prop.reference === ReferenceType.ONE_TO_ONE && prop.owner);
 
     if (isToOneOwner && pks.length === 1 && !Utils.isDefined(entity[pks[0]], true)) {
-      changeSet.payload[prop.name] = entity.__helper!.__identifier;
+      changeSet.payload[prop.name] = entity[HelperType]!.__identifier;
     }
   }
 
@@ -94,7 +94,7 @@ export class ChangeSetComputer {
       return;
     }
 
-    if (prop.owner || target.getItems(false).filter(item => !item.__helper!.__initialized).length > 0) {
+    if (prop.owner || target.getItems(false).filter(item => !item[HelperType]!.__initialized).length > 0) {
       this.collectionUpdates.add(target);
     } else {
       target.setDirty(false); // inverse side with only populated items, nothing to persist

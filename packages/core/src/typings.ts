@@ -19,6 +19,10 @@ export type DeepPartial<T> = T & {
 
 export const EntityRepositoryType = Symbol('EntityRepositoryType');
 export const PrimaryKeyType = Symbol('PrimaryKeyType');
+export const HelperType = Symbol('HelperType');
+export const MetadataType = Symbol('MetadataType');
+export const PlatformType = Symbol('PlatformType');
+
 export type Primary<T> = T extends { [PrimaryKeyType]: infer PK }
   ? PK : T extends { _id: infer PK }
   ? PK | string : T extends { uuid: infer PK }
@@ -98,9 +102,9 @@ export interface IWrappedEntityInternal<T extends AnyEntity<T>, PK extends keyof
 export type AnyEntity<T = any> = { [K in keyof T]?: T[K] } & {
   [PrimaryKeyType]?: unknown;
   [EntityRepositoryType]?: unknown;
-  __helper?: IWrappedEntityInternal<T, keyof T>;
-  __meta?: EntityMetadata<T>;
-  __platform?: Platform;
+  [HelperType]?: IWrappedEntityInternal<T, keyof T>;
+  [MetadataType]?: EntityMetadata<T>;
+  [PlatformType]?: Platform;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
